@@ -30,15 +30,28 @@ Set-Variable -Name "WINVS" -Value ([Environment]::OSVersion.Version).Major
 $OS | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt
 Get-HotFix | Select HotFixID, InstalledOn | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt -Append
 
+# Email settings to be passed into further events
+$Script:From = "your@gmail.com"
+$Script:To = "your@email.com"
+$Script:Cc = "other@gmail.com"
+[array]$Script:Attachment = Get-ChildItem "C:\Support\Updates\*" -Include *.txt,*.evtx
+$Script:Subject1 = "$env.computername does not meet the OS requirements: $OSx$BIT"
+$Script:Subject2 = "$env.computername is detected as having $KB installed on $OSx$BIT"
+$Script:Subject3 = "$env.computername has had $KBL installed on $OSx$BIT"
+$Script:Subject3 = "$env.computername has had $KBL identified and exited. $OSx$BIT"
+$Script:Body = "Logs attached related to system patching event"
+$Script:SMTPServer = "smtp.gmail.com"
+$Script:SMTPPort = "587"
+$Script:Secret = "PASSWORD"
+
+# Copy the line below into the email sections so it can send based on the Subject / Body #s  Uncomment afterword
+# Send-MailMessage -From $From -to $To -Cc $Cc -Subject $Subject -Body $Body -SmtpServer $SMTPServer -port $SMTPPort -UseSsl -Credential $Secret -Attachments $Attachment –DeliveryNotificationOption OnSuccess
+
+
 # Exit if OS is not Win10  Can remove email section if not needed
 If (!($WINVS -eq 10)) {
     #Pending further email info
-    Send-MailMessage -from "ServiceEmail <PatcherEmail@Yourdomain.com>"
-    -to "Yourname <youreemail@domain.com>",
-    #"User03 <user03@example.com>" `
-    -subject "$env:computername was Win 7 or 8 x$BIT"
-    -body "Cumulative Update check began on $Date"
-    -Attachment "c:\support\Updates\$env:computername.hotfixes.txt" -smtpServer mail.yourdomain.com
+    Send-MailMessage -From $From -to $To -Cc $Cc -Subject $Subject1 -Body $Body -SmtpServer $SMTPServer -port $SMTPPort -UseSsl -Credential $Secret -Attachments $Attachment –DeliveryNotificationOption OnSuccess
     Exit
 }
 
@@ -107,27 +120,29 @@ switch ((Get-CimInstance Win32_OperatingSystem).BuildNumber) {
 
 
 # Choose correct Bitness KB link, If Matching KB installed, end script and update by email
-switch ($BIT){
-   64 { $KBL = "$KB64" }
-   86 { $KBL = "$KB86"}
-   default { $KBL = "Other"}
+switch ($BIT) {
+    64 { $KBL = "$KB64" }
+    86 { $KBL = "$KB86" }
+    default { $KBL = "Other" }
 }
 
 $Patch = Get-Hotfix -id $KB
 
 if ($Patch -ne $Null) {
     #System replied with info meaning the patch is installed
-    Write-Output "Replace this with email to send status as patch $KB has been detected as installed"
+    Send-MailMessage -From $From -to $To -Cc $Cc -Subject $Subject2 -Body $Body -SmtpServer $SMTPServer -port $SMTPPort -UseSsl -Credential $Secret -Attachments $Attachment –DeliveryNotificationOption OnSuccess
 
-} else {
+}
+else {
     #Shorten website
     $Script:Web = "http://download.windowsupdate.com/d/msdownload/update/software/secu/2020/01/windows10.0-"
     #Create Variable that is Script wide for the download link
     $Script:LINK = "$Web$KBL"
-} elseif {
+}
+elseif {
 
     #If the KB doesnt match or OS not supported bail out here and send alert email
-    Write-Host "To be updated with email info and exit instructions"
+    Send-MailMessage -From $From -to $To -Cc $Cc -Subject $Subject4 -Body $Body -SmtpServer $SMTPServer -port $SMTPPort -UseSsl -Credential $Secret -Attachments $Attachment –DeliveryNotificationOption OnSuccess
 
 }
      
@@ -222,17 +237,66 @@ if (Test-Path "C:\Support\Updates" -Pathtype Container) {
     }
 }    
 
-$Updates = (Get-ChildItem $Location | Where-Object {$_.Extension -eq '.msu'} | Sort-Object {$_.LastWriteTime} )
+
+<#
+
+This will install multiple Microsoft Standalone Updates from the specified location silently and without rebooting after each update.
+You have the option of rebooting after all of the updates have been installed.  Two logs are crated, an output log from WUSA that has
+to be read with Event Viewer (.evtx extension) and a transcript log to give you an idea of what's going on (.log extension).
+
+#>
+
+#Create Transcript Log for Troubleshooting
+$VerbosePreference = 'Continue'
+$LogPath = Split-Path $MyInvocation.MyCommand.Path
+Get-ChildItem "$LogPath\*.log" | Where-Object LastWriteTime -LT (Get-Date).AddDays(-15) | Remove-Item -Confirm:$false
+$LogPathName = Join-Path -Path $LogPath -ChildPath "$($MyInvocation.MyCommand.Name)-$(Get-Date -Format 'MM.dd.yyyy').log"
+Start-Transcript $LogPathName
+
+$Location = "C:\Support\Updates"
+$Reboot = "No"
+$FileTime = Get-Date -format 'MM.dd.yyyy'
+$Updates = (Get-ChildItem $Location | Where-Object { $_.Extension -eq '.msu' } | Sort-Object { $_.LastWriteTime } )
 $Qty = $Updates.count
 
-
-if (!(Test-Path $env:systemroot\SysWOW64\wusa.exe)){
-  $Wus = "$env:systemroot\System32\wusa.exe"
-}
-else {
-  $Wus = "$env:systemroot\SysWOW64\wusa.exe"
+if (!(Test-Path $env:systemroot\SysWOW64\wusa.exe)) {
+    $Wus = "$env:systemroot\System32\wusa.exe"
+    } else {
+    $Wus = "$env:systemroot\SysWOW64\wusa.exe"
 }
 
-if (!(Test-Path $env:HOMEDRIVE\Temp)){
-  New-Item $env:HOMEDRIVE\Temp
+if (!(Test-Path $env:HOMEDRIVE\Temp)) {
+    New-Item $env:HOMEDRIVE\Temp -Type Directory
 }
+
+if (Test-Path $env:HOMEDRIVE\Temp\Wusa.evtx) {
+    Rename-Item $env:HOMEDRIVE\Temp\Wusa.evtx $env:HOMEDRIVE\Temp\Wusa.$FileTime.evtx
+}
+
+foreach ($Update in $Updates) {
+    Write-Information "Starting Update $Qty - `r`n$Update"
+    Start-Process -FilePath $Wus -ArgumentList ($Update.FullName, '/quiet', '/norestart', "/log:$env:HOMEDRIVE\Temp\Wusa.log") -Wait
+    Write-Information "Finished Update $Qty"
+    if (Test-Path $env:HOMEDRIVE\Temp\Wusa.log) {
+        Rename-Item $env:HOMEDRIVE\Temp\Wusa.log $env:HOMEDRIVE\Temp\Wusa.$FileTime.evtx
+    }
+
+    Write-Information '-------------------------------------------------------------------------------------------'
+
+    $Qty = --$Qty
+
+    if ($Qty -eq 0) {
+        if ($Reboot -like 'Y*') {
+            msg console /server:localhost "Updates completed and system is rebooting."
+            Send-MailMessage -From $From -to $To -Cc $Cc -Subject $Subject3 -Body $Body -SmtpServer $SMTPServer -port $SMTPPort -UseSsl -Credential $Secret -Attachments $Attachment –DeliveryNotificationOption OnSuccess
+            Restart-Computer
+        } else {
+            msg console /server:localhost "Updates completed and it is advised to close programs and reboot now to complete. It will automatically reboot within 12 hours"
+            Send-MailMessage -From $From -to $To -Cc $Cc -Subject $Subject3 -Body $Body -SmtpServer $SMTPServer -port $SMTPPort -UseSsl -Credential $Secret -Attachments $Attachment –DeliveryNotificationOption OnSuccess
+            Restart-Computer –delay 43200
+        }
+    }
+}
+
+#Close Transcript Log for Troubleshooting
+Stop-Transcript

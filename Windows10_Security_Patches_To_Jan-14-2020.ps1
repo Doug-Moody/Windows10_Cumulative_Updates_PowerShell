@@ -5,19 +5,21 @@
 # Creating workspace in C:\Support for logs and files
 if (![System.IO.Directory]::Exists("C:\support\")) {
     [system.io.directory]::CreateDirectory("c:\Support")
+}
+if (![System.IO.Directory]::Exists("C:\support\Updates")) { 
     [system.io.directory]::CreateDirectory("c:\Support\Updates")
 }
 
 
 # Check Bitness of OS
-if ((gwmi win32_operatingsystem | select osarchitecture).osarchitecture -eq "64-bit") {
+if ((Get-WmiObject win32_operatingsystem | Select-Object osarchitecture).osarchitecture -eq "64-bit") {
     #64 bit logic here
-    Write "64-bit OS Detected" | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt -Append
+    Write-Output "64-bit OS Detected" | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt -Append
     $Script:BIT = "64"
 }
 else {
     #32 bit logic here
-    Write "32-bit OS Detected" | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt -Append
+    Write-Output "32-bit OS Detected" | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt -Append
     $Script:BIT = "86"
 
 }
@@ -28,7 +30,8 @@ Set-Variable -Name "WINVS" -Value ([Environment]::OSVersion.Version).Major
 
 # Logging OS Version info
 $OS | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt
-Get-HotFix | Select HotFixID, InstalledOn | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt -Append
+Get-HotFix | Select-Object HotFixID, InstalledOn | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt -Append
+
 
 # Email settings to be passed into further events
 $Script:From = "your@gmail.com"
@@ -126,9 +129,9 @@ switch ($BIT) {
     default { $KBL = "Other" }
 }
 
-$Patch = Get-Hotfix -id $KB
+$Patch = Get-Hotfix -id "$KB"
 
-if ($Patch -ne $Null) {
+if ($null -ne $Patch) {
     #System replied with info meaning the patch is installed
     Send-MailMessage -From $From -to $To -Cc $Cc -Subject $Subject2 -Body $Body -SmtpServer $SMTPServer -port $SMTPPort -UseSsl -Credential $Secret -Attachments $Attachment –DeliveryNotificationOption OnSuccess
 
@@ -139,8 +142,10 @@ else {
     #Create Variable that is Script wide for the download link
     $Script:LINK = "$Web$KBL"
 }
-elseif {
 
+
+If ($KBL -eq "Other") {
+    
     #If the KB doesnt match or OS not supported bail out here and send alert email
     Send-MailMessage -From $From -to $To -Cc $Cc -Subject $Subject4 -Body $Body -SmtpServer $SMTPServer -port $SMTPPort -UseSsl -Credential $Secret -Attachments $Attachment –DeliveryNotificationOption OnSuccess
 
@@ -153,7 +158,6 @@ elseif {
 msg console /server:localhost "Hello , your computer needs security patches and will need to remain powered on until complete. You can continue using the system but prepare by saving data as there will be a need to reboot later"
 
 
- 
 
 #Download the matching Cumulative Patches for the detected Windows 10 OS
 if (Test-Path "C:\Support\Updates" -Pathtype Container) {
@@ -231,13 +235,10 @@ if (Test-Path "C:\Support\Updates" -Pathtype Container) {
         }
     }
     Get-FileFromUrl $URL $Filename1
-    
-    $Rename = Start-Job -ScriptBlock { Rename-Item -Path "C:\Support\Updates\$KBx$BIT.tmp" -NewName "C:\Support\Updates\$KBx$BIT.msu"
-    $Rename | Wait-Job | Receive-Job
-    }
-}    
-
-
+}
+  
+$Rename = Start-Job -ScriptBlock { Rename-Item -Path "C:\Support\Updates\$KBx$BIT.tmp" -NewName "C:\Support\Updates\$KBx$BIT.msu"
+$Rename | Wait-Job | Receive-Job}
 <#
 
 This will install multiple Microsoft Standalone Updates from the specified location silently and without rebooting after each update.
@@ -261,24 +262,21 @@ $Qty = $Updates.count
 
 if (!(Test-Path $env:systemroot\SysWOW64\wusa.exe)) {
     $Wus = "$env:systemroot\System32\wusa.exe"
-    } else {
+}
+else {
     $Wus = "$env:systemroot\SysWOW64\wusa.exe"
 }
 
-if (!(Test-Path $env:HOMEDRIVE\Temp)) {
-    New-Item $env:HOMEDRIVE\Temp -Type Directory
-}
-
-if (Test-Path $env:HOMEDRIVE\Temp\Wusa.evtx) {
-    Rename-Item $env:HOMEDRIVE\Temp\Wusa.evtx $env:HOMEDRIVE\Temp\Wusa.$FileTime.evtx
+if (Test-Path C:\Support\Updates\Wusa.evtx) {
+    Rename-Item C:\Support\Updates\Wusa.evtx C:\Support\Updates\Wusa.$FileTime.evtx
 }
 
 foreach ($Update in $Updates) {
     Write-Information "Starting Update $Qty - `r`n$Update"
-    Start-Process -FilePath $Wus -ArgumentList ($Update.FullName, '/quiet', '/norestart', "/log:$env:HOMEDRIVE\Temp\Wusa.log") -Wait
+    Start-Process -FilePath $Wus -ArgumentList ($Update.FullName, '/quiet', '/norestart', "/log:C:\Support\Updates\Wusa.log") -Wait
     Write-Information "Finished Update $Qty"
-    if (Test-Path $env:HOMEDRIVE\Temp\Wusa.log) {
-        Rename-Item $env:HOMEDRIVE\Temp\Wusa.log $env:HOMEDRIVE\Temp\Wusa.$FileTime.evtx
+    if (Test-Path C:\Support\Updates\Wusa.log) {
+        Rename-Item C:\Support\Updates\Wusa.log C:\Support\Updates\Wusa.$FileTime.evtx
     }
 
     Write-Information '-------------------------------------------------------------------------------------------'
@@ -290,7 +288,8 @@ foreach ($Update in $Updates) {
             msg console /server:localhost "Updates completed and system is rebooting."
             Send-MailMessage -From $From -to $To -Cc $Cc -Subject $Subject3 -Body $Body -SmtpServer $SMTPServer -port $SMTPPort -UseSsl -Credential $Secret -Attachments $Attachment –DeliveryNotificationOption OnSuccess
             Restart-Computer
-        } else {
+        }
+        else {
             msg console /server:localhost "Updates completed and it is advised to close programs and reboot now to complete. It will automatically reboot within 12 hours"
             Send-MailMessage -From $From -to $To -Cc $Cc -Subject $Subject3 -Body $Body -SmtpServer $SMTPServer -port $SMTPPort -UseSsl -Credential $Secret -Attachments $Attachment –DeliveryNotificationOption OnSuccess
             Restart-Computer –delay 43200

@@ -45,15 +45,18 @@ If (!($WINVS -eq 10)) {
 
 #Matching OS Build to a KB Identifier & Downloads
 switch ((Get-CimInstance Win32_OperatingSystem).BuildNumber) {
-    #Windows 7 & 8 
+    #Windows 7 & 8 (Not support in this cumulative update)
     7600 { $Script:OS = "W2K8R2" }
     7601 { $Script:OS = "W2K8R2SP1" }    
     9200 { $Script:OS = "W2K12" }
     9600 { $Script:OS = "W2K12R2" }
-    #Win 10 versions
-    #1507 (Not supported)
+    #Win 10 versions ############################
+    #1507
     10240 { $Script:OS = "W2K10v1507" }
-    #1511 (Not Suported)
+    10240 { $Script:KB = "KB4534296" }
+    10240 { $Script:KB64 = "kb4534306-x64_fe79ab28516198be477c18e53390f802588bca6c.msu" }
+    10240 { $Script:KB86 = "kb4534306-x86_b79d87ac2c7692f2c152122c818baed709e4f11e.msu" }
+    #1511 (Not Supported in this cumulative update EOL, update to a higher Windows version)
     10586 { $Script:OS = "W2K10v1511" }
     #1607
     14393 { $Script:OS = "W2K10v1607" }
@@ -62,55 +65,68 @@ switch ((Get-CimInstance Win32_OperatingSystem).BuildNumber) {
     14393 { $Script:KB86 = "kb4534271-x86_1401cdaf3781a6b032b558afd90fff6faa5569d3.msu" }
     #1703
     15063 { $Script:OS = "W2K10v1703" }
-    15063 { $Script:KB64 = "W2K10v1703" }
-    15063 { $Script:KB86 = "W2K10v1703" }
+    15063 { $Script:KB = "KB4534296" }
+    15063 { $Script:KB64 = "kb4534296-x64_be00b82daf47109410f688cd3776f2b1e3e091b1.msu" }
+    15063 { $Script:KB86 = "kb4534296-x86_f5cabb7aecb6000d39d0d82f84579a03ffa79f52.msu" }
     #1709
     16299 { $Script:OS = "W2K10v1709" }
-    16299 { $Script:KB = "" }
-    16299 { $Script:KB64 = "W2K10v1709" }
-    16299 { $Script:KB86 = "W2K10v1709" }
+    16299 { $Script:KB = "KB4534276" }
+    16299 { $Script:KB64 = "kb4534276-x64_0ef8f7279a888b2243bf02a1a4a8ab92fac5131f.msu" }
+    16299 { $Script:KB86 = "kb4534276-x86_accaa8ee3113a2b42a3da387c13ab59a59688bd3.msu" }
     #1803
     17134 { $Script:OS = "W2K10v1803" }
-    17134 { $Script:KB = "W2K10v1803" }
-    17134 { $Script:KB64 = "W2K10v1803" }
-    17134 { $Script:KB86 = "W2K10v1803" }
+    17134 { $Script:KB = "KB4534293" }
+    17134 { $Script:KB64 = "kb4534293-x64_af7ad26642b7c49788d70902f1918b9b234292cf.msu" }
+    17134 { $Script:KB86 = "kb4534293-x86_eea3d9658ebced3365ba55a6cc3de62a2a67ef93.msu" }
     #1809
     17763 { $Script:OS = "W2K10v1809" }
-    17763 { $Script:OS = "W2K10v1809" }
-    17763 { $Script:KB64 = "W2K10v1809" }
-    17763 { $Script:KB86 = "W2K10v1809" }
+    17763 { $Script:KB = "KB4534273" }
+    17763 { $Script:KB64 = "kb4534273-x64_74bf76bc5a941bbbd0052caf5c3f956867e1de38.msu" }
+    17763 { $Script:KB86 = "kb4534273-x86_26cc081cc59d5df33392e478cf9a60f8b418fd05.msu" }
     #1903
     18362 { $Script:OS = "W2K10v1903" }
     18362 { $Script:KB = "KB4528760" }
-    18362 { $Script:1903 = "W2K10v1903" }
-    18362 { $Script:1903x86 = "W2K10v1903" }
+    18362 { $Script:KB64 = "kb4528760-x64_4ea59b94564145460ab025616ff10460bb7894d8.msu" }
+    18362 { $Script:KB86 = "kb4528760-x86_e8a6aae0076403e9d8d68c3ccc3f753728298b83.msu" }
     #1909
     18363 { $Script:OS = "W2K10v1909" }
     18363 { $Script:KB = "KB4528760" } 
-    18363 { $Script:1909 = "W2K10v1909" }
-    18363 { $Script:1909x86 = "W2K10v1909" }
+    18363 { $Script:KB64 = "kb4528760-x64_4ea59b94564145460ab025616ff10460bb7894d8.msu" }
+    18363 { $Script:KB86 = "kb4528760-x86_e8a6aae0076403e9d8d68c3ccc3f753728298b83.msu" }
     #2004 (Not Released)
     19041 { $Script:OS = "W2K10v2004" }
-    19041 { $Script:2004 = "W2K10v2004" }
-    19041 { $Script:2004x86 = "W2K10v2004" }
-    # PENDING: Server 2016
+    19041 { $Script:KB64 = "W2K10v2004" }
+    19041 { $Script:KB86 = "W2K10v2004" }
+    # PENDING: Server 2016 (Uses same as 1903 & 1909)
+    12345 { $Script:OS = "W2K10v1909" }
+    12345 { $Script:KB = "KB4528760" } 
+    12345 { $Script:KB64 = "kb4528760-x64_4ea59b94564145460ab025616ff10460bb7894d8.msu" }
+    12345 { $Script:KB86 = "kb4528760-x86_e8a6aae0076403e9d8d68c3ccc3f753728298b83.msu" }
     default { $Script:OS = "Not Listed" }
+}
+
+
+#If Matching KB installed, end script and update by email
+$Patch = Get-Hotfix -id $KB
+
+if ($Patch -ne $Null) {
+
+    Write "Replace this with email to send status as patched"
+
+} else {
+#Shorten website
+    $Script:Web = "http://download.windowsupdate.com/d/msdownload/update/software/secu/2020/01/windows10.0-"
+    #Create Variable that is Script wide for the download link
+    $Script:LINK = "$Web$KB"
 }
 
 
 
 
-#Shorten website
-$Script:Web = "http://download.windowsupdate.com/d/msdownload/update/software/secu/2020/01/windows10.0-"
-#Create Variable that is Script wide
-$Script:LINK = "EMPTY"
 
 
 #Determine download based on OS Build & "Bitness"
 switch ( $KB ) {
-    { "email that this does not have patching" }
-    W2K10v1511 { "email that this does not have patching" }
-    KB4534271 
 
         
     default { $Script:LINK = "ERROR" }

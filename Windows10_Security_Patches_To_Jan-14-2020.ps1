@@ -32,19 +32,18 @@ Set-Variable -Name "WINVS" -Value ([Environment]::OSVersion.Version).Major
 $OS | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt
 Get-HotFix | Select-Object HotFixID, InstalledOn | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt -Append
 
-
 # Email settings to be passed into further events
-$Script:From = "your@gmail.com"
-$Script:To = "your@email.com"
+$Script:From = "sendingemail@gmail.com"
+$Script:To = "youremail@address.com"
 $Script:Cc = "other@gmail.com"
-[array]$Script:Attachment = Get-ChildItem "C:\Support\Updates\*" -Include *.txt,*.evtx
+$Script:Attachment = Get-ChildItem "C:\Support\Updates\*" -Include *.txt,*.evtx
 $Script:Subject1 = "$env.computername does not meet the OS requirements: $OSx$BIT"
 $Script:Subject2 = "$env.computername is detected as having $KB installed on $OSx$BIT"
 $Script:Subject3 = "$env.computername has had $KBL installed on $OSx$BIT"
 $Script:Subject3 = "$env.computername has had $KBL identified and exited. $OSx$BIT"
 $Script:Body = "Logs attached related to system patching event"
 $Script:SMTPServer = "smtp.gmail.com"
-$Script:SMTPPort = "587"
+$Script:SMTPPort = "587" #Or 465 for 
 $Script:Secret = "PASSWORD"
 
 # Copy the line below into the email sections so it can send based on the Subject / Body #s  Uncomment afterword
@@ -150,19 +149,14 @@ If ($KBL -eq "Other") {
     Send-MailMessage -From $From -to $To -Cc $Cc -Subject $Subject4 -Body $Body -SmtpServer $SMTPServer -port $SMTPPort -UseSsl -Credential $Secret -Attachments $Attachment –DeliveryNotificationOption OnSuccess
 
 }
-     
-        
-            
 
 #Alert user that system is currently updating
 msg console /server:localhost "Hello , your computer needs security patches and will need to remain powered on until complete. You can continue using the system but prepare by saving data as there will be a need to reboot later"
 
-
-
 #Download the matching Cumulative Patches for the detected Windows 10 OS
 if (Test-Path "C:\Support\Updates" -Pathtype Container) {
     Set-Variable -Name "URL" -Value "$LINK"
-    Set-Variable -Name "Filename1" -Value "C:\Support\Updates\$KBx$BIT.tmp"
+    Set-Variable -Name "Filename1" -Value "C:\Support\Updates\$KBx$BIT.msu"
             
     function Get-FileFromURL {
         [CmdletBinding()]
@@ -237,8 +231,8 @@ if (Test-Path "C:\Support\Updates" -Pathtype Container) {
     Get-FileFromUrl $URL $Filename1
 }
   
-$Rename = Start-Job -ScriptBlock { Rename-Item -Path "C:\Support\Updates\$KBx$BIT.tmp" -NewName "C:\Support\Updates\$KBx$BIT.msu"
-$Rename | Wait-Job | Receive-Job}
+# $Rename = Start-Job -ScriptBlock { Rename-Item -Path "C:\Support\Updates\$KBx$BIT.tmp" -NewName "C:\Support\Updates\$KBx$BIT.msu"
+# $Rename | Wait-Job | Receive-Job}
 <#
 
 This will install multiple Microsoft Standalone Updates from the specified location silently and without rebooting after each update.

@@ -11,41 +11,41 @@ Set-Variable -Name "WINVS" -Value ([Environment]::OSVersion.Version).Major
 #Matching OS Build to a KB Identifier & Downloads
 switch ((Get-CimInstance Win32_OperatingSystem).BuildNumber) {
     #Server 2008-2016
-    7600 { $OS = "W2K8R2" }
-    7601 { $OS = "W2K8R2SP1" }    
-    9200 { $OS = "W2K12" }
-    9600 { $OS = "W2K12R2" }
+    7600 { $Script:OS = "W2K8R2" }
+    7601 { $Script:OS = "W2K8R2SP1" }    
+    9200 { $Script:OS = "W2K12" }
+    9600 { $Script:OS = "W2K12R2" }
     #Win 10 versions
-    10240 { $OS = "W2K10v1507" }
-    10586 { $OS = "W2K10v1511" }
-    14393 { $OS = "W2K10v1607" }
-    14393 { $KB = "KB4534271" }
-    14393 { $Script:1607 = "kb4534271-x64_a009e866038836e277b167c85c58bbf1e0cc5dc8.msu" }
-    14393 { $Script:1607x86 = "kb4534271-x86_1401cdaf3781a6b032b558afd90fff6faa5569d3.msu" }
-    15063 { $OS = "W2K10v1703" }
-    15063 { $Script:1703 = "W2K10v1703" }
-    15063 { $Script:1703x86 = "W2K10v1703" }
-    16299 { $OS = "W2K10v1709" }
+    10240 { $Script:OS = "W2K10v1507" }
+    10586 { $Script:OS = "W2K10v1511" }
+    14393 { $Script:OS = "W2K10v1607" }
+    14393 { $Script:KB = "KB4534271" }
+    14393 { $Script:KB64 = "kb4534271-x64_a009e866038836e277b167c85c58bbf1e0cc5dc8.msu" }
+    14393 { $Script:KBx86 = "kb4534271-x86_1401cdaf3781a6b032b558afd90fff6faa5569d3.msu" }
+    15063 { $Script:OS = "W2K10v1703" }
+    15063 { $Script:KB64 = "W2K10v1703" }
+    15063 { $Script:KB86 = "W2K10v1703" }
+    16299 { $Script:OS = "W2K10v1709" }
     16299 { $Script:1709 = "W2K10v1709" }
     16299 { $Script:1709x86 = "W2K10v1709" }
-    17134 { $OS = "W2K10v1803" }
+    17134 { $Script:OS = "W2K10v1803" }
     17134 { $Script:1803 = "W2K10v1803" }
     17134 { $Script:1803x86 = "W2K10v1803" }
-    17763 { $OS = "W2K10v1809" }
+    17763 { $Script:OS = "W2K10v1809" }
     17763 { $Script:1809 = "W2K10v1809" }
     17763 { $Script:1809x86 = "W2K10v1809" }
-    18362 { $OS = "W2K10v1903" }
+    18362 { $Script:OS = "W2K10v1903" }
     18362 { $Script:KB = "KB4528760" }
     18362 { $Script:1903 = "W2K10v1903" }
     18362 { $Script:1903x86 = "W2K10v1903" }
-    18363 { $OS = "W2K10v1909" }
+    18363 { $Script:OS = "W2K10v1909" }
     18363 { $Script:KB = "KB4528760" } 
     18363 { $Script:1909 = "W2K10v1909" }
     18363 { $Script:1909x86 = "W2K10v1909" }
-    19041 { $OS = "W2K10v2004" }
+    19041 { $Script:OS = "W2K10v2004" }
     19041 { $Script:2004 = "W2K10v2004" }
     19041 { $Script:2004x86 = "W2K10v2004" }
-    default { $OS = "Not Listed" }
+    default { $Script:OS = "Not Listed" }
 }
 
 # Logging OS Version info
@@ -61,9 +61,9 @@ If (!($WINVS -eq 10)) {
     -subject "$env:computername was Win 7 or 8"
     -body "Cumulative Update check began on $Date"
     -Attachment "c:\support\Updates\$env:computername.hotfixes.txt" -smtpServer mail.yourdomain.com
+    Exit
 }
-exit 
-}
+
 
 #Alert user that system is currently updating
 msg console /server:localhost "Hello , your computer needs security patches and will need to remain powered on until complete. You can continue using the system but prepare by saving data as there will be a need to reboot later"
@@ -74,27 +74,26 @@ $Script:Web = "http://download.windowsupdate.com/d/msdownload/update/software/se
 
 
 
-#Determine download based on OS Build
-switch (!($OS -eq "Not Listed") {
+#Determine download based on OS Build & "Bitness"
+switch ( $OS ) {
     
-        ($OS -eq "W2K10v1507") { email that this does not have patching }
-        ($OS -eq "W2K10v1511") { email that this does not have patching }
+    W2K10v1507 {"email that this does not have patching" }
+    W2K10v1511 {"email that this does not have patching" }
     
-        ($OS -eq "W2K10v1607")
-        if ((gwmi win32_operatingsystem | select osarchitecture).osarchitecture -eq "64-bit") {
+    W2K10v1607 { if ((gwmi win32_operatingsystem | select osarchitecture).osarchitecture -eq "64-bit") {
             #64 bit logic here
             Write "64-bit OS Detected" | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt -Append
-            $Script:LINK = "LINK" -Value "$Web$1607"
+            $Script:LINK = "LINK" -Value "$Web$KB64"
         }
         else {
             #32 bit logic here
             Write "32-bit OS Detected" | Out-file -Filepath c:\support\Updates\$env:computername.hotfixes.txt -Append
-            Set-Variable -Name "LINK" -Value "$Web$1607x86"
-        }
+            Set-Variable -Name "LINK" -Value "$Web$KB86"
+        }}
   
 
         
-        default { $OS = "Not Listed" }
+        default { $Script:LINK = "LINK" -Value "ERROR"}
     }
     
 
@@ -111,7 +110,7 @@ switch (!($OS -eq "Not Listed") {
 
  
     if (Test-Path "C:\Support\Updates" -Pathtype Container) {
-        Set-Variable -Name "URL" -Value $LINK
+        Set-Variable -Name "URL" -Value "$LINK"
         Set-Variable -Name "Filename1" -Value "C:\Support\Updates\CumulativeUpdate.tmp"
             
         function Get-FileFromURL {

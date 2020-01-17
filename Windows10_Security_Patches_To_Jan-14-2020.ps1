@@ -116,14 +116,19 @@ switch ($BIT){
 $Patch = Get-Hotfix -id $KB
 
 if ($Patch -ne $Null) {
-
-    Write "Replace this with email to send status as patched"
+    #System replied with info meaning the patch is installed
+    Write-Output "Replace this with email to send status as patch $KB has been detected as installed"
 
 } else {
     #Shorten website
     $Script:Web = "http://download.windowsupdate.com/d/msdownload/update/software/secu/2020/01/windows10.0-"
     #Create Variable that is Script wide for the download link
     $Script:LINK = "$Web$KBL"
+} elseif {
+
+    #If the KB doesnt match or OS not supported bail out here and send alert email
+    Write-Host "To be updated with email info and exit instructions"
+
 }
      
         
@@ -131,7 +136,8 @@ if ($Patch -ne $Null) {
 
 #Alert user that system is currently updating
 msg console /server:localhost "Hello , your computer needs security patches and will need to remain powered on until complete. You can continue using the system but prepare by saving data as there will be a need to reboot later"
-Set-Variable -Name "BUILD" -Value ([Environment]::OSVersion.Version).Build
+
+
  
 
 #Download the matching Cumulative Patches for the detected Windows 10 OS

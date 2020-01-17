@@ -1,16 +1,19 @@
 
-# Check if windows 10 before continuing to patch
+# Powershell script to patch Curveball and all previously patched vulnerabilities on Windows 10 1607-1909 
+# as this will identify the OS & Build then download the matching patches released up to Jan 14th 2020
 
+# Creating workspace in C:\Support for logs and files
 if (![System.IO.Directory]::Exists("C:\support\")) {
     [system.io.directory]::CreateDirectory("c:\Support")
     [system.io.directory]::CreateDirectory("c:\Support\Updates")
 }
 
+# Check if windows 10 before continuing to patch
 Set-Variable -Name "WINVS" -Value ([Environment]::OSVersion.Version).Major
 
 #Matching OS Build to a KB Identifier & Downloads
 switch ((Get-CimInstance Win32_OperatingSystem).BuildNumber) {
-    #Server 2008-2016
+    #Windows 7 & 8 
     7600 { $Script:OS = "W2K8R2" }
     7601 { $Script:OS = "W2K8R2SP1" }    
     9200 { $Script:OS = "W2K12" }
@@ -26,14 +29,14 @@ switch ((Get-CimInstance Win32_OperatingSystem).BuildNumber) {
     15063 { $Script:KB64 = "W2K10v1703" }
     15063 { $Script:KB86 = "W2K10v1703" }
     16299 { $Script:OS = "W2K10v1709" }
-    16299 { $Script:1709 = "W2K10v1709" }
-    16299 { $Script:1709x86 = "W2K10v1709" }
+    16299 { $Script:KB64 = "W2K10v1709" }
+    16299 { $Script:KB86 = "W2K10v1709" }
     17134 { $Script:OS = "W2K10v1803" }
-    17134 { $Script:1803 = "W2K10v1803" }
-    17134 { $Script:1803x86 = "W2K10v1803" }
+    17134 { $Script:KB64 = "W2K10v1803" }
+    17134 { $Script:KB86 = "W2K10v1803" }
     17763 { $Script:OS = "W2K10v1809" }
-    17763 { $Script:1809 = "W2K10v1809" }
-    17763 { $Script:1809x86 = "W2K10v1809" }
+    17763 { $Script:KB64 = "W2K10v1809" }
+    17763 { $Script:KB86 = "W2K10v1809" }
     18362 { $Script:OS = "W2K10v1903" }
     18362 { $Script:KB = "KB4528760" }
     18362 { $Script:1903 = "W2K10v1903" }
@@ -45,6 +48,7 @@ switch ((Get-CimInstance Win32_OperatingSystem).BuildNumber) {
     19041 { $Script:OS = "W2K10v2004" }
     19041 { $Script:2004 = "W2K10v2004" }
     19041 { $Script:2004x86 = "W2K10v2004" }
+    # PENDING: Server 2016
     default { $Script:OS = "Not Listed" }
 }
 
@@ -75,7 +79,7 @@ $Script:Web = "http://download.windowsupdate.com/d/msdownload/update/software/se
 
 
 #Determine download based on OS Build & "Bitness"
-switch ( $OS ) {
+switch ( $KB ) {
     
     W2K10v1507 {"email that this does not have patching" }
     W2K10v1511 {"email that this does not have patching" }

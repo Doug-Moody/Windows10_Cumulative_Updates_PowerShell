@@ -6,9 +6,15 @@ This powershell script can be ran on a system and will identify if a system is p
 This is a cumualtive update so downloads all security related updates in one rollup.
 
 
+
+
 Alternatives:
 
 There has been a write-up for two other options using Powershell -
 
 https://www.virtualizationhowto.com/2020/01/automate-curveball-crypt32-dll-patching/
+
+
+GIST to pull CLU's based on version of windows running. Read comments section. May need updating
+https://gist.github.com/keithga/1ad0abd1f7ba6e2f8aff63d94ab03048
 

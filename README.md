@@ -1,3 +1,9 @@
+Just use this - https://github.com/aaronparker/LatestUpdate  
+
+
+Updates everything
+
+
 Please star this if you found it useful. You can use it for whatever.  Will be setting to check and push specific KBs later and will run on 7-10.  
 
 # Windows10_Cumulative_Updates_PowerShell

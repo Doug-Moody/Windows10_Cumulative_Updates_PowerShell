@@ -1,7 +1,7 @@
 Just use this - https://github.com/aaronparker/LatestUpdate  
 
 
-Updates everything
+Updates everything if ENTERPRISE or EDU Win 10.  If PRO only 1809 , 1903 & 1909 are patched. 
 
 
 Please star this if you found it useful. You can use it for whatever.  Will be setting to check and push specific KBs later and will run on 7-10.  
